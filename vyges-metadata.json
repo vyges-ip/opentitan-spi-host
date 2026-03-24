@@ -24,7 +24,7 @@
       "rtl/spi_host_window.sv"
     ]
   },
-  "updated": "2026-02-19T06:22:56Z",
+  "updated": "2026-03-24T02:12:51Z",
   "$schema": "https://vyges.com/schema/v1/vyges-metadata.schema.json",
   "x-version": "1.0.0",
   "description": "Spi Host. OpenTitan IP block from hw/ip/spi_host.",
@@ -36,7 +36,7 @@
   "design_type": [
     "digital"
   ],
-  "maturity": "imported",
+  "maturity": "prototype",
   "created": "2026-02-19T06:12:02Z",
   "interfaces": [
     {
@@ -44,13 +44,109 @@
       "direction": "input",
       "protocol": "TL-UL",
       "width": 32,
-      "description": "TL-UL host interface for register access"
+      "description": "TL-UL host interface for register access",
+      "signals": [
+        {
+          "name": "clk_i",
+          "direction": "input",
+          "type": "clock",
+          "width": 1,
+          "description": "System clock"
+        },
+        {
+          "name": "rst_ni",
+          "direction": "input",
+          "type": "reset",
+          "width": 1,
+          "active_level": "low",
+          "description": "Active-low synchronous reset"
+        },
+        {
+          "name": "tl_i",
+          "direction": "input",
+          "type": "data",
+          "width": 1,
+          "description": "TL-UL host-to-device (tl_h2d_t struct) \u2014 connect to xbar slave port"
+        },
+        {
+          "name": "tl_o",
+          "direction": "output",
+          "type": "data",
+          "width": 1,
+          "description": "TL-UL device-to-host (tl_d2h_t struct) \u2014 connect to xbar slave port"
+        }
+      ]
     },
     {
       "type": "bus",
       "direction": "output",
       "protocol": "SPI",
-      "description": "SPI host controller; connects to SPI bus"
+      "description": "SPI host controller; connects to SPI bus",
+      "signals": [
+        {
+          "name": "cio_sck_o",
+          "direction": "output",
+          "type": "data",
+          "width": 1,
+          "description": "SPI clock"
+        },
+        {
+          "name": "cio_sck_en_o",
+          "direction": "output",
+          "type": "control",
+          "width": 1,
+          "description": "SPI clock output enable"
+        },
+        {
+          "name": "cio_csb_o",
+          "direction": "output",
+          "type": "control",
+          "width": 1,
+          "description": "SPI chip select (active low)"
+        },
+        {
+          "name": "cio_csb_en_o",
+          "direction": "output",
+          "type": "control",
+          "width": 1,
+          "description": "Chip select output enable"
+        },
+        {
+          "name": "cio_sd_o",
+          "direction": "output",
+          "type": "data",
+          "width": 4,
+          "description": "SPI data output (QSPI[3:0])"
+        },
+        {
+          "name": "cio_sd_i",
+          "direction": "input",
+          "type": "data",
+          "width": 4,
+          "description": "SPI data input (QSPI[3:0])"
+        },
+        {
+          "name": "cio_sd_en_o",
+          "direction": "output",
+          "type": "control",
+          "width": 4,
+          "description": "SPI data output enable"
+        },
+        {
+          "name": "intr_error_o",
+          "direction": "output",
+          "type": "interrupt",
+          "width": 1,
+          "description": "SPI error interrupt"
+        },
+        {
+          "name": "intr_spi_event_o",
+          "direction": "output",
+          "type": "interrupt",
+          "width": 1,
+          "description": "SPI event interrupt"
+        }
+      ]
     }
   ],
   "categories": {
