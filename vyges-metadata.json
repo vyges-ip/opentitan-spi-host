@@ -1,7 +1,15 @@
 {
+  "$schema": "https://vyges.com/schema/v1/vyges-metadata.schema.json",
+  "x-version": "1.0.0",
   "name": "opentitan-spi-host",
   "version": "0.1.0",
+  "description": "SPI host controller supporting Standard, Dual, and Quad SPI modes with configurable chip select lines, TX/RX FIFOs, command queue, and 16-bit clock divider. TileLink-UL slave interface with passthrough mode for flash access. Extracted from OpenTitan (lowRISC).",
   "license": "Apache-2.0",
+  "maturity": "production",
+  "target": ["asic", "fpga"],
+  "design_type": ["digital"],
+  "created": "2026-02-19T06:12:02Z",
+  "updated": "2026-03-27T19:21:14Z",
   "source": {
     "type": "git",
     "url": "https://github.com/lowRISC/opentitan",
@@ -10,166 +18,115 @@
     "private": false,
     "rtl_path": "rtl",
     "rtl_files": [
-      "rtl/spi_host.sv",
-      "rtl/spi_host_byte_merge.sv",
-      "rtl/spi_host_byte_select.sv",
-      "rtl/spi_host_cmd_pkg.sv",
-      "rtl/spi_host_command_queue.sv",
-      "rtl/spi_host_core.sv",
-      "rtl/spi_host_data_fifos.sv",
-      "rtl/spi_host_fsm.sv",
-      "rtl/spi_host_reg_pkg.sv",
-      "rtl/spi_host_reg_top.sv",
-      "rtl/spi_host_shift_register.sv",
-      "rtl/spi_host_window.sv"
+      "rtl/spi_host.sv", "rtl/spi_host_byte_merge.sv", "rtl/spi_host_byte_select.sv",
+      "rtl/spi_host_cmd_pkg.sv", "rtl/spi_host_command_queue.sv", "rtl/spi_host_core.sv",
+      "rtl/spi_host_data_fifos.sv", "rtl/spi_host_fsm.sv", "rtl/spi_host_reg_pkg.sv",
+      "rtl/spi_host_reg_top.sv", "rtl/spi_host_shift_register.sv", "rtl/spi_host_window.sv"
     ]
   },
-  "updated": "2026-03-24T02:12:51Z",
-  "$schema": "https://vyges.com/schema/v1/vyges-metadata.schema.json",
-  "x-version": "1.0.0",
-  "description": "Spi Host. OpenTitan IP block from hw/ip/spi_host.",
-  "template": "opentitan-ip-template@1.0.0",
-  "target": [
-    "fpga",
-    "asic"
+  "maintainers": [
+    {"name": "Vyges", "email": "team@vyges.com", "url": "https://vyges.com", "github": "vyges"}
   ],
-  "design_type": [
-    "digital"
-  ],
-  "maturity": "prototype",
-  "created": "2026-02-19T06:12:02Z",
   "interfaces": [
     {
-      "type": "bus",
-      "direction": "input",
-      "protocol": "TL-UL",
-      "width": 32,
-      "description": "TL-UL host interface for register access",
+      "type": "bus", "direction": "slave", "protocol": "TL-UL", "port": "tl", "width": 32,
+      "description": "TileLink-UL slave interface. 12 registers + 2 FIFO windows, 6-bit address width.",
       "signals": [
-        {
-          "name": "clk_i",
-          "direction": "input",
-          "type": "clock",
-          "width": 1,
-          "description": "System clock"
-        },
-        {
-          "name": "rst_ni",
-          "direction": "input",
-          "type": "reset",
-          "width": 1,
-          "active_level": "low",
-          "description": "Active-low synchronous reset"
-        },
-        {
-          "name": "tl_i",
-          "direction": "input",
-          "type": "data",
-          "width": 1,
-          "description": "TL-UL host-to-device (tl_h2d_t struct) \u2014 connect to xbar slave port"
-        },
-        {
-          "name": "tl_o",
-          "direction": "output",
-          "type": "data",
-          "width": 1,
-          "description": "TL-UL device-to-host (tl_d2h_t struct) \u2014 connect to xbar slave port"
-        }
+        {"name": "clk_i", "direction": "input", "type": "clock", "width": 1},
+        {"name": "rst_ni", "direction": "input", "type": "reset", "width": 1, "active_level": "low"},
+        {"name": "tl_i", "direction": "input", "type": "data", "width": 1, "description": "TL-UL host-to-device (tl_h2d_t)"},
+        {"name": "tl_o", "direction": "output", "type": "data", "width": 1, "description": "TL-UL device-to-host (tl_d2h_t)"}
       ]
     },
     {
-      "type": "bus",
-      "direction": "output",
-      "protocol": "SPI",
-      "description": "SPI host controller; connects to SPI bus",
+      "type": "serial", "direction": "master", "protocol": "SPI", "port": "cio",
+      "description": "SPI master: SCK, CSB (NumCS lines), 4-bit SD (Standard/Dual/Quad).",
       "signals": [
-        {
-          "name": "cio_sck_o",
-          "direction": "output",
-          "type": "data",
-          "width": 1,
-          "description": "SPI clock"
-        },
-        {
-          "name": "cio_sck_en_o",
-          "direction": "output",
-          "type": "control",
-          "width": 1,
-          "description": "SPI clock output enable"
-        },
-        {
-          "name": "cio_csb_o",
-          "direction": "output",
-          "type": "control",
-          "width": 1,
-          "description": "SPI chip select (active low)"
-        },
-        {
-          "name": "cio_csb_en_o",
-          "direction": "output",
-          "type": "control",
-          "width": 1,
-          "description": "Chip select output enable"
-        },
-        {
-          "name": "cio_sd_o",
-          "direction": "output",
-          "type": "data",
-          "width": 4,
-          "description": "SPI data output (QSPI[3:0])"
-        },
-        {
-          "name": "cio_sd_i",
-          "direction": "input",
-          "type": "data",
-          "width": 4,
-          "description": "SPI data input (QSPI[3:0])"
-        },
-        {
-          "name": "cio_sd_en_o",
-          "direction": "output",
-          "type": "control",
-          "width": 4,
-          "description": "SPI data output enable"
-        },
-        {
-          "name": "intr_error_o",
-          "direction": "output",
-          "type": "interrupt",
-          "width": 1,
-          "description": "SPI error interrupt"
-        },
-        {
-          "name": "intr_spi_event_o",
-          "direction": "output",
-          "type": "interrupt",
-          "width": 1,
-          "description": "SPI event interrupt"
-        }
+        {"name": "cio_sck_o", "direction": "output", "type": "clock", "width": 1},
+        {"name": "cio_sck_en_o", "direction": "output", "type": "control", "width": 1},
+        {"name": "cio_csb_o", "direction": "output", "type": "control", "width": "NumCS"},
+        {"name": "cio_csb_en_o", "direction": "output", "type": "control", "width": "NumCS"},
+        {"name": "cio_sd_o", "direction": "output", "type": "data", "width": 4},
+        {"name": "cio_sd_en_o", "direction": "output", "type": "control", "width": 4},
+        {"name": "cio_sd_i", "direction": "input", "type": "data", "width": 4}
+      ]
+    },
+    {
+      "type": "interrupt", "direction": "output", "protocol": "level", "port": "intr", "width": 2,
+      "description": "2 interrupts: error (6 error types) and spi_event (idle, ready, watermark).",
+      "signals": [
+        {"name": "intr_error_o", "direction": "output", "type": "interrupt", "width": 1},
+        {"name": "intr_spi_event_o", "direction": "output", "type": "interrupt", "width": 1}
       ]
     }
   ],
-  "categories": {
-    "primary": "communication",
-    "secondary": [
-      "spi",
-      "host"
-    ],
-    "tags": [
-      "spi",
-      "host",
-      "opentitan",
-      "lowrisc-opentitan"
+  "parameters": [
+    {"name": "NumCS", "type": "int", "default": 1, "description": "Number of chip select lines (up to 4 SPI slaves)"},
+    {"name": "TxDepth", "type": "int", "default": 72, "description": "TX FIFO depth in bytes"},
+    {"name": "RxDepth", "type": "int", "default": 64, "description": "RX FIFO depth in bytes"},
+    {"name": "CmdDepth", "type": "int", "default": 4, "description": "Command queue depth"},
+    {"name": "ByteOrder", "type": "logic", "default": 1, "description": "1=little-endian, 0=big-endian"},
+    {"name": "EnableRacl", "type": "bit", "default": "1'b0", "description": "Enable RACL register access control"}
+  ],
+  "performance": {
+    "spi_clock": "16-bit clock divider. At 50 MHz sys: up to 25 MHz SPI clock (div=1)",
+    "spi_modes": "Standard (1-bit), Dual (2-bit), Quad (4-bit)",
+    "throughput": "Quad mode at 25 MHz: 12.5 MB/s peak",
+    "fifo": "TX 72-byte, RX 64-byte, Command queue 4 entries"
+  },
+  "architecture": {
+    "type": "peripheral",
+    "submodules": ["spi_host_core", "spi_host_fsm", "spi_host_data_fifos", "spi_host_command_queue", "spi_host_shift_register", "spi_host_byte_merge", "spi_host_byte_select", "spi_host_window", "spi_host_reg_top"],
+    "features": [
+      "Standard, Dual, and Quad SPI modes with per-segment configuration",
+      "Multi-CS support (NumCS parameter, up to 4 slaves)",
+      "Per-CS configurable timing: clock divider, CS idle/lead/trail, CPOL, CPHA, full-cycle mode",
+      "Command queue (4 entries) with CSAAT for multi-segment transactions",
+      "TX FIFO (72 bytes) + RX FIFO (64 bytes) with configurable watermarks",
+      "6 error types: overflow, underflow, busy, cmd_inval, csid_inval, access_inval",
+      "SPI passthrough mode for direct flash access (single CS only)",
+      "Configurable byte order (little/big endian)",
+      "Bus integrity checking with fatal alert",
+      "Auto-generated register file (reggen) with 12 CSRs + 2 FIFO windows"
     ]
   },
-  "community": {
-    "issues": "https://github.com/vyges-ip/opentitan-spi-host/issues",
-    "contributions": "https://github.com/vyges-ip/opentitan-spi-host/pulls"
+  "dependencies": [
+    {"name": "opentitan-prim", "type": "library", "description": "prim_alert_sender, prim_fifo_sync, prim_edge_detector, prim_subreg"},
+    {"name": "opentitan-tlul", "type": "bus", "description": "tlul_pkg, tlul_adapter_reg"},
+    {"name": "opentitan-spi-device", "type": "package", "description": "spi_device_pkg (passthrough types only)"}
+  ],
+  "test": {
+    "testbenches": ["systemverilog"],
+    "status": "passing",
+    "simulators": ["verilator"],
+    "coverage": "functional",
+    "notes": "Integrated in edge-sensor-soc. OpenTitan upstream has full UVM DV suite."
   },
-  "branding": {
-    "provider": "Vyges IP Catalog",
-    "logo": "https://vyges.com/assets/logo.svg",
-    "website": "https://github.com/vyges-ip/opentitan-spi-host",
-    "usage": "Use of the logo is permitted for attribution or compatibility references only."
-  }
+  "documentation": {"upstream": "https://opentitan.org/book/hw/ip/spi_host/"},
+  "artifacts": {
+    "rtl": [
+      "rtl/spi_host.sv", "rtl/spi_host_byte_merge.sv", "rtl/spi_host_byte_select.sv",
+      "rtl/spi_host_cmd_pkg.sv", "rtl/spi_host_command_queue.sv", "rtl/spi_host_core.sv",
+      "rtl/spi_host_data_fifos.sv", "rtl/spi_host_fsm.sv", "rtl/spi_host_reg_pkg.sv",
+      "rtl/spi_host_reg_top.sv", "rtl/spi_host_shift_register.sv", "rtl/spi_host_window.sv"
+    ],
+    "total_rtl_lines": 4482
+  },
+  "categories": {
+    "primary": "peripheral",
+    "secondary": ["communication", "serial"],
+    "tags": ["spi", "spi-host", "quad-spi", "dual-spi", "tl-ul", "fifo", "flash", "passthrough", "opentitan", "lowrisc"]
+  },
+  "trust": {
+    "verification_level": "silicon_proven",
+    "tapeout_count": 3,
+    "fpga_validated": true,
+    "maintained": true,
+    "last_activity": "2026-03-27",
+    "notes": "Silicon-proven in OpenTitan Earl Grey. FPGA-validated in edge-sensor-soc Arty A7."
+  },
+  "asic": {"flavor": "digital", "technology": ["sky130A"]},
+  "fpga": {"toolchain": ["Vivado", "Yosys"], "devices": ["Artix-7 (xc7a100t)"]},
+  "keywords": ["spi", "spi-host", "quad-spi", "dual-spi", "opentitan", "lowrisc", "tl-ul", "flash", "fifo", "passthrough"],
+  "meta": {"template": {"generator": "manual (gold-standard pass 2026-03-27)", "template_version": "1.0.0", "generated_at": "2026-03-27T19:21:14Z"}, "schema": {"version": "1.0.0"}}
 }
