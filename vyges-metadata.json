@@ -192,5 +192,19 @@
     "schema": {
       "version": "1.0.0"
     }
-  }
+  },
+  "vyges_overlays": [
+    {
+      "path": "vyges-overlays/spi_host_reg_top.sv",
+      "replaces": "rtl/spi_host_reg_top.sv",
+      "kind": "fixup",
+      "reason": "Upstream uses struct-level XOR reduction on racl_policies_i that Vivado 2025.2 rejects. Overlay replaces the reduction with 1'b0 tie-off for RACL-disabled builds."
+    },
+    {
+      "path": "vyges-overlays/spi_device_pkg.sv",
+      "replaces": "rtl/spi_device_pkg.sv",
+      "kind": "stub",
+      "reason": "Minimal stub defining passthrough_req_t + passthrough_rsp_t types that spi_host.sv references. Full upstream spi_device_pkg pulls in spi_device_reg_pkg and dozens of unused types."
+    }
+  ]
 }
