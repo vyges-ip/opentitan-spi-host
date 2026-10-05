@@ -197,7 +197,9 @@ module spi_host_reg_top
   logic intr_test_error_wd;
   logic intr_test_spi_event_wd;
   logic alert_test_we;
-  logic alert_test_wd;
+  logic alert_test_fatal_fault_wd;
+  logic alert_test_regwen_qs;
+  logic alert_test_regwen_wd;
   logic control_we;
   logic [7:0] control_rx_watermark_qs;
   logic [7:0] control_rx_watermark_wd;
@@ -295,6 +297,7 @@ module spi_host_reg_top
   ) u_intr_state_error (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (intr_state_we),
@@ -322,6 +325,7 @@ module spi_host_reg_top
   ) u_intr_state_spi_event (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -351,6 +355,7 @@ module spi_host_reg_top
   ) u_intr_enable_error (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (intr_enable_we),
@@ -378,6 +383,7 @@ module spi_host_reg_top
   ) u_intr_enable_spi_event (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (intr_enable_we),
@@ -436,14 +442,18 @@ module spi_host_reg_top
 
   // R[alert_test]: V(True)
   logic alert_test_qe;
-  logic [0:0] alert_test_flds_we;
+  logic [1:0] alert_test_flds_we;
   assign alert_test_qe = &alert_test_flds_we;
+  // Create REGWEN-gated WE signal
+  logic alert_test_gated_we;
+  assign alert_test_gated_we = alert_test_we && alert_test_regwen_qs;
+  //   F[fatal_fault]: 0:0
   prim_subreg_ext #(
     .DW    (1)
-  ) u_alert_test (
+  ) u_alert_test_fatal_fault (
     .re     (1'b0),
-    .we     (alert_test_we),
-    .wd     (alert_test_wd),
+    .we     (alert_test_gated_we),
+    .wd     (alert_test_fatal_fault_wd),
     .d      ('0),
     .qre    (),
     .qe     (alert_test_flds_we[0]),
@@ -452,6 +462,34 @@ module spi_host_reg_top
     .qs     ()
   );
   assign reg2hw.alert_test.qe = alert_test_qe;
+
+  //   F[regwen]: 31:31
+  prim_subreg #(
+    .DW      (1),
+    .SwAccess(prim_subreg_pkg::SwAccessW0C),
+    .RESVAL  (1'h1),
+    .Mubi    (1'b0)
+  ) u_alert_test_regwen (
+    .clk_i   (clk_i),
+    .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
+
+    // from register interface
+    .we     (alert_test_we),
+    .wd     (alert_test_regwen_wd),
+
+    // from internal hardware
+    .de     (1'b0),
+    .d      ('0),
+
+    // to internal hardware
+    .qe     (alert_test_flds_we[1]),
+    .q      (),
+    .ds     (),
+
+    // to register interface (read)
+    .qs     (alert_test_regwen_qs)
+  );
 
 
   // R[control]: V(False)
@@ -464,6 +502,7 @@ module spi_host_reg_top
   ) u_control_rx_watermark (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (control_we),
@@ -491,6 +530,7 @@ module spi_host_reg_top
   ) u_control_tx_watermark (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (control_we),
@@ -518,6 +558,7 @@ module spi_host_reg_top
   ) u_control_output_en (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (control_we),
@@ -545,6 +586,7 @@ module spi_host_reg_top
   ) u_control_sw_rst (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (control_we),
@@ -572,6 +614,7 @@ module spi_host_reg_top
   ) u_control_spien (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (control_we),
@@ -601,6 +644,7 @@ module spi_host_reg_top
   ) u_status_txqd (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -628,6 +672,7 @@ module spi_host_reg_top
   ) u_status_rxqd (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -655,6 +700,7 @@ module spi_host_reg_top
   ) u_status_cmdqd (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -682,6 +728,7 @@ module spi_host_reg_top
   ) u_status_rxwm (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -709,6 +756,7 @@ module spi_host_reg_top
   ) u_status_byteorder (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -736,6 +784,7 @@ module spi_host_reg_top
   ) u_status_rxstall (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -763,6 +812,7 @@ module spi_host_reg_top
   ) u_status_rxempty (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -790,6 +840,7 @@ module spi_host_reg_top
   ) u_status_rxfull (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -817,6 +868,7 @@ module spi_host_reg_top
   ) u_status_txwm (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -844,6 +896,7 @@ module spi_host_reg_top
   ) u_status_txstall (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -871,6 +924,7 @@ module spi_host_reg_top
   ) u_status_txempty (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -898,6 +952,7 @@ module spi_host_reg_top
   ) u_status_txfull (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -925,6 +980,7 @@ module spi_host_reg_top
   ) u_status_active (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -952,6 +1008,7 @@ module spi_host_reg_top
   ) u_status_ready (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (1'b0),
@@ -981,6 +1038,7 @@ module spi_host_reg_top
   ) u_configopts_clkdiv (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (configopts_we),
@@ -1008,6 +1066,7 @@ module spi_host_reg_top
   ) u_configopts_csnidle (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (configopts_we),
@@ -1035,6 +1094,7 @@ module spi_host_reg_top
   ) u_configopts_csntrail (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (configopts_we),
@@ -1062,6 +1122,7 @@ module spi_host_reg_top
   ) u_configopts_csnlead (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (configopts_we),
@@ -1089,6 +1150,7 @@ module spi_host_reg_top
   ) u_configopts_fullcyc (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (configopts_we),
@@ -1116,6 +1178,7 @@ module spi_host_reg_top
   ) u_configopts_cpha (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (configopts_we),
@@ -1143,6 +1206,7 @@ module spi_host_reg_top
   ) u_configopts_cpol (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (configopts_we),
@@ -1171,6 +1235,7 @@ module spi_host_reg_top
   ) u_csid (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (csid_we),
@@ -1269,6 +1334,7 @@ module spi_host_reg_top
   ) u_error_enable_cmdbusy (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (error_enable_we),
@@ -1296,6 +1362,7 @@ module spi_host_reg_top
   ) u_error_enable_overflow (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (error_enable_we),
@@ -1323,6 +1390,7 @@ module spi_host_reg_top
   ) u_error_enable_underflow (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (error_enable_we),
@@ -1350,6 +1418,7 @@ module spi_host_reg_top
   ) u_error_enable_cmdinval (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (error_enable_we),
@@ -1377,6 +1446,7 @@ module spi_host_reg_top
   ) u_error_enable_csidinval (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (error_enable_we),
@@ -1406,6 +1476,7 @@ module spi_host_reg_top
   ) u_error_status_cmdbusy (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (error_status_we),
@@ -1433,6 +1504,7 @@ module spi_host_reg_top
   ) u_error_status_overflow (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (error_status_we),
@@ -1460,6 +1532,7 @@ module spi_host_reg_top
   ) u_error_status_underflow (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (error_status_we),
@@ -1487,6 +1560,7 @@ module spi_host_reg_top
   ) u_error_status_cmdinval (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (error_status_we),
@@ -1514,6 +1588,7 @@ module spi_host_reg_top
   ) u_error_status_csidinval (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (error_status_we),
@@ -1541,6 +1616,7 @@ module spi_host_reg_top
   ) u_error_status_accessinval (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (error_status_we),
@@ -1570,6 +1646,7 @@ module spi_host_reg_top
   ) u_event_enable_rxfull (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (event_enable_we),
@@ -1597,6 +1674,7 @@ module spi_host_reg_top
   ) u_event_enable_txempty (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (event_enable_we),
@@ -1624,6 +1702,7 @@ module spi_host_reg_top
   ) u_event_enable_rxwm (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (event_enable_we),
@@ -1651,6 +1730,7 @@ module spi_host_reg_top
   ) u_event_enable_txwm (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (event_enable_we),
@@ -1678,6 +1758,7 @@ module spi_host_reg_top
   ) u_event_enable_ready (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (event_enable_we),
@@ -1705,6 +1786,7 @@ module spi_host_reg_top
   ) u_event_enable_idle (
     .clk_i   (clk_i),
     .rst_ni  (rst_ni),
+    .reinit_i(1'b0),
 
     // from register interface
     .we     (event_enable_we),
@@ -1828,7 +1910,9 @@ module spi_host_reg_top
   assign intr_test_spi_event_wd = reg_wdata[1];
   assign alert_test_we = racl_addr_hit_write[3] & reg_we & !reg_error;
 
-  assign alert_test_wd = reg_wdata[0];
+  assign alert_test_fatal_fault_wd = reg_wdata[0];
+
+  assign alert_test_regwen_wd = reg_wdata[31];
   assign control_we = racl_addr_hit_write[4] & reg_we & !reg_error;
 
   assign control_rx_watermark_wd = reg_wdata[7:0];
@@ -1942,6 +2026,7 @@ module spi_host_reg_top
 
       racl_addr_hit_read[3]: begin
         reg_rdata_next[0] = '0;
+        reg_rdata_next[31] = alert_test_regwen_qs;
       end
 
       racl_addr_hit_read[4]: begin
